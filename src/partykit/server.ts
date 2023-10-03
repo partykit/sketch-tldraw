@@ -6,63 +6,35 @@
  */
 
 import type * as Party from "partykit/server";
-import { onConnect } from "y-partykit";
-import { YPartyKitStorage } from "y-partykit/storage";
-import type { Doc as YDoc } from "yjs";
+import { onConnect, unstable_getYDoc, type YPartyKitOptions } from "y-partykit";
+import type { Doc } from "yjs";
 
-import { type TLInstancePresence } from "@tldraw/tldraw";
-
-export default class TldrawServer implements Party.Server {
+export default class YjsServer implements Party.Server {
+  yjsOptions: YPartyKitOptions = { persist: true };
   constructor(public party: Party.Party) {}
 
-  onConnect(ws: Party.Connection) {
-    console.log("[main] onConnect: someone connected");
-    return onConnect(ws, this.party, {
+  getOpts() {
+    // options must match when calling unstable_getYDoc and onConnect
+    const opts: YPartyKitOptions = {
       persist: true,
-      callback: {
-        handler: (ydoc) => {
-          try {
-            this.handleYDocChange(ydoc);
-          } catch (e) {
-            console.error("Error in ydoc update handler", e);
-          }
-        },
-      },
-    });
+      callback: { handler: (doc) => this.handleYDocChange(doc) },
+    };
+    return opts;
   }
 
-  async handleYDocChange(ydoc: YDoc) {
+  async onRequest() {
+    const doc = await unstable_getYDoc(this.party, this.getOpts());
+    const room = `tl_${this.party.id}`;
+    return new Response(
+      JSON.stringify({ [room]: doc.getArray(room) }, null, 2)
+    );
+  }
+  onConnect(conn: Party.Connection) {
+    return onConnect(conn, this.party, this.getOpts());
+  }
+  handleYDocChange(doc: Doc) {
+    // console.log("ydoc changed");
     // called on every ydoc change
     // no-op
-  }
-
-  async onRequest(req: Party.Request) {
-    const roomStorage = new YPartyKitStorage(this.party.storage);
-    const ydoc = await roomStorage.getYDoc(this.party.id);
-    const awareness = (ydoc as any).awareness;
-    const states =
-      (awareness?.getStates() as Map<
-        number,
-        { presence: TLInstancePresence }
-      >) || {};
-
-    if (req.method === "GET") {
-      if (!ydoc) {
-        return new Response("No ydoc yet", { status: 404 });
-      }
-      const map = ydoc.getMap(`tl_${this.party.id}`);
-      return new Response(
-        JSON.stringify(
-          {
-            ydoc: map,
-            awareness: states,
-          },
-          null,
-          2
-        )
-      );
-    }
-
-    return new Response("Unsupported method", { status: 400 });
   }
 }
