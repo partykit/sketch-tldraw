@@ -1,6 +1,5 @@
 // From
 // https://github.com/tldraw/tldraw-yjs-example/blob/main/src/useYjsStore.ts
-
 import {
   DocumentRecordType,
   InstancePresenceRecordType,
@@ -22,7 +21,7 @@ import {
 } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { YKeyValue } from "y-utility/y-keyvalue";
-//import { WebsocketProvider } from 'y-websocket'
+//import { WebsocketProvider } from "y-websocket";
 import YPartyKitProvider from "y-partykit/provider";
 import * as Y from "yjs";
 
