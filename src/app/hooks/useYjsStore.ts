@@ -18,21 +18,21 @@ import {
 } from "@tldraw/tldraw";
 import { useEffect, useMemo, useState } from "react";
 import { YKeyValue } from "y-utility/y-keyvalue";
-//import { WebsocketProvider } from 'y-websocket'
 import YPartyKitProvider from "y-partykit/provider";
 import * as Y from "yjs";
 import { DEFAULT_STORE } from "./default_tldraw_store";
 
 export function useYjsStore({
+  hostUrl,
+  version = 1,
   roomId = "example",
-  hostUrl = "127.0.0.1:1999",
   shapeUtils = [],
-}: Partial<{
+}: {
   hostUrl: string;
-  roomId: string;
-  version: number;
-  shapeUtils: TLAnyShapeUtilConstructor[];
-}>) {
+  version?: number;
+  roomId?: string;
+  shapeUtils?: TLAnyShapeUtilConstructor[];
+}) {
   const [store] = useState(() => {
     const store = createTLStore({
       shapeUtils: [...defaultShapeUtils, ...shapeUtils],
@@ -53,12 +53,11 @@ export function useYjsStore({
     return {
       yDoc,
       yStore,
-      //room: new WebsocketProvider(hostUrl, roomId, yDoc, { connect: true }),
-      room: new YPartyKitProvider(hostUrl, roomId, yDoc, {
+      room: new YPartyKitProvider(hostUrl, `${roomId}_${version}`, yDoc, {
         connect: true,
       }),
     };
-  }, [hostUrl, roomId]);
+  }, [hostUrl, roomId, version]);
 
   useEffect(() => {
     setStoreWithStatus({ status: "loading" });
